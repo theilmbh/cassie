@@ -16,6 +16,34 @@
  * =====================================================================================
  */
 
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "cmplr.h"
+#include "simplify_rne.h"
+
+Node UNDEFINED_NODE = {UNDEFINED, 0, NULL, NULL, 0, NULL, NULL};
+
+int absval(int a) 
+{
+    if (a < 0) {
+        return -1*a;
+    }
+    return a;   
+}
+
+int integer_gcd(int a, int b)
+{
+    int r;
+    while (b != 0) {
+        r = a % b;
+        a = b;
+        b = r;
+    }
+    return absval(a);
+}
+
+
 Node * simplify_rational_number(Node * u)
 {
     Node * out = u;
@@ -36,12 +64,12 @@ Node * simplify_rational_number(Node * u)
         } 
 
         if (n->value % d->value == 0) {
-            out = integer_node(n->value / d->value)
+            out = integer_node(n->value / d->value);
             free(u);
             free(n);
             free(d);
         } else {
-            int g = int_gcd(n->value, d->value);
+            int g = integer_gcd(n->value, d->value);
             if (d->value > 0) {
                 out = frac_node(integer_node(n->value / g),
                                   integer_node(d->value / g));
@@ -62,7 +90,7 @@ Node * simplify_RNE(Node * u)
 {
     Node * out = simplify_RNE_rec(u);
     if (out->type == UNDEFINED) {
-        return &UNDEFINED;
+        return &UNDEFINED_NODE;
     }
     return simplify_rational_number(out);
 }
@@ -77,7 +105,7 @@ Node * simplify_RNE_rec(Node * u)
     
     if (u->type == FRAC) {
         if (u->args[1]->value == 0) {
-            return &UNDEFINED;
+            return &UNDEFINED_NODE;
         }
         return u;
     }
@@ -85,7 +113,7 @@ Node * simplify_RNE_rec(Node * u)
     if (u->n_args == 1) {
         out = simplify_RNE_rec(u->args[0]);
         if (out->type == UNDEFINED) {
-            return &UNDEFINED;
+            return &UNDEFINED_NODE;
         }
         return out;
     }
@@ -110,9 +138,9 @@ Node * simplify_RNE_rec(Node * u)
         }
     }
 
-    if (u->type = BIN_OP_POWER) {
+    if (u->type == BIN_OP_POWER) {
         v = simplify_RNE_rec(u->args[0]);
-        return evaluate_power(v, u->args[1]);
+        return evaluate_power(v, u->args[1]->value);
     }
 
 }
@@ -131,7 +159,7 @@ int numerator_fun(Node * u)
 int denominator_fun(Node * u)
 {
     if (u->type == INT) {
-        return u->value;
+        return 1;
     }
 
     if (u->type == FRAC) {
@@ -142,7 +170,7 @@ int denominator_fun(Node * u)
 Node * evaluate_quotient(Node * v, Node * w)
 {
     if (numerator_fun(w) == 0) {
-        return &UNDEFINED;
+        return &UNDEFINED_NODE;
     }
     Node * num;
     Node * denom;
@@ -154,15 +182,81 @@ Node * evaluate_quotient(Node * v, Node * w)
 
 Node * evaluate_product(Node * v, Node * w)
 {
+    if ((v->type == UNDEFINED) || (w->type == UNDEFINED)) {
+        return &UNDEFINED_NODE;
+    }
+
+    Node * num;
+    Node * denom;
+
+    num = integer_node(numerator_fun(v)*numerator_fun(w));
+    denom = integer_node(denominator_fun(v)*denominator_fun(w));
+    return frac_node(num, denom);
 
 }
 
 Node * evaluate_sum(Node * v, Node * w)
 {
+    if ((v->type == UNDEFINED) || (w->type == UNDEFINED)) {
+        return &UNDEFINED_NODE;
+    }
+    
+    Node * num;
+    Node * denom;
+    int vn = numerator_fun(v);
+    int vd = denominator_fun(v);
+    int wn = numerator_fun(w);
+    int wd = denominator_fun(w);
+
+    num = integer_node(vn*wd + wn*vd);
+    denom = integer_node(wd*vd);
+    return frac_node(num, denom);
     
 }
 
-Node * evaulate_power(Node * v, Node * w)
+Node * evaluate_power(Node * v, int n)
 {
 
+    if (numerator_fun(v) != 0) {
+       if ( n > 0) {
+            Node * s = evaluate_power(v, n-1);
+            return evaluate_product(s, v);
+        }
+
+        if (n == 0) 
+            return integer_node(1);
+
+        if (n == -1) 
+            return frac_node(integer_node(denominator_fun(v)), 
+                             integer_node(numerator_fun(v))); 
+
+        if (n < -1) {
+            Node * s = frac_node(integer_node(denominator_fun(v)), 
+                                 integer_node(numerator_fun(v)));
+            return evaluate_power(s, -n);
+        }
+    }
+
+    if (numerator_fun(v) == 0) {
+        if (n >= 1) 
+            return integer_node(0);
+
+        if (n <= 0 ) 
+            return &UNDEFINED_NODE;
+    }   
 }
+
+int num_digits(int a) 
+{
+    int v = absval(a);
+    int x = 1;
+    int dig = 0;
+    while (v > x) {
+        x *=10;
+        dig++;
+    }
+    if (a <0) 
+        dig++;
+    return dig;
+}
+

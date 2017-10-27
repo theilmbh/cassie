@@ -48,7 +48,7 @@ typedef struct Node {
     struct Node *right;
 } Node;
 
-Node UNDEFINED = {UNDEFINED, 0, NULL, NULL, 0, NULL, NULL};
+extern Node UNDEFINED_NODE;
 
 void read_one_token(Token * tok, FILE * f);
 void print_token(Token * tok);

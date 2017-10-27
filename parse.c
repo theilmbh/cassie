@@ -181,7 +181,7 @@ Node *power()
     out = factor();
     if (tok->type == OP && tok->val.op == POWER) {
         match(OP);
-        out = pow_node(out, term());
+        out = pow_node(out, factor());
     }
     return out;
 }
@@ -208,7 +208,7 @@ Node *term()
         if ((out->type == INT) && (denom->type == INT)) {
             out = frac_node(out, denom);
         } else {
-            out = divide_node(out, term());
+            out = divide_node(out, denom);
         }
 	return out;
     }

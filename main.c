@@ -22,10 +22,26 @@
 #include "cmplr.h"
 #include "symbol.h"
 #include "algebra.h"
+#include "simplify_rne.h"
 
 #define PRINT_AST
 
-void print_expression(Node * ast)
+void print_fraction( Node * frac)
+{
+    int ntop = num_digits(numerator_fun(frac));
+    int nbot = num_digits(denominator_fun(frac));
+
+    int linelen = (ntop < nbot) ? nbot : ntop;
+    int i;
+    printf("%d\n", numerator_fun(frac));
+    for (i = 0; i < linelen; i++) {
+        printf("-");
+    }
+    printf("\n");
+    printf("%d", denominator_fun(frac));
+}
+    
+void print_expression( Node * ast)
 {
 
     /* If it's an operator, print the left side,
@@ -35,20 +51,27 @@ void print_expression(Node * ast)
 	case BIN_OP_TIMES:
             print_expression(ast->args[0]);
 	    printf(" ");
+            print_expression(ast->args[1]);
 	    break;
 	case BIN_OP_PLUS:
             print_expression(ast->args[0]);
 	    printf("  +  ");
+            print_expression(ast->args[1]);
 	    break;
 	case BIN_OP_MINUS:
             print_expression(ast->args[0]);
 	    printf("  -  ");
+            print_expression(ast->args[1]);
 	    break;
         case BIN_OP_POWER:
             print_expression(ast->args[0]);
             printf("^");
+            print_expression(ast->args[1]);
+            break;
+        case FRAC:
+            print_fraction(ast);
+            break; 
 	}
-	print_expression(ast->args[1]);
     }
 
     /* Otherwise just print the value */
@@ -79,6 +102,9 @@ void print_node(FILE * out, Node * n, int indent)
     case BIN_OP_DIVIDE:
 	fprintf(out, "P Divide\n");
 	break;
+    case FRAC:
+        fprintf(out, "P Frac\n");
+        break;
     case INT:
 	fprintf(out, "P Integer: %d\n", n->value);
 	break;
@@ -140,11 +166,14 @@ int main(int argc, char **argv)
     while (1) {
         printf("In  [%d] :=> ", eval_num);
         ast = parse(stdin);
+        //print_ast(stdout, ast, 0, -1, 0);
+        ast = simplify_RNE(ast);
         //ast1 = attach_variables(ast);
         //FILE *out = fopen("./ast.tree", "w");
 #ifdef PRINT_AST
-        print_ast(stdout, rewrite_minus(ast), 0, -1, 0);
+        //print_ast(stdout, ast, 0, -1, 0);
 #endif
+        printf("\n");
         print_expression(ast);
         printf("\n\n");
         //int v = evaluate(rewrite_minus(ast));
