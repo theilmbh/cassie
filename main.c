@@ -166,12 +166,12 @@ int main(int argc, char **argv)
     while (1) {
         printf("In  [%d] :=> ", eval_num);
         ast = parse(stdin);
-        //print_ast(stdout, ast, 0, -1, 0);
+        print_ast(stdout, ast, 0, -1, 0);
         ast = simplify_RNE(ast);
         //ast1 = attach_variables(ast);
         //FILE *out = fopen("./ast.tree", "w");
 #ifdef PRINT_AST
-        //print_ast(stdout, ast, 0, -1, 0);
+        print_ast(stdout, ast, 0, -1, 0);
 #endif
         printf("\n");
         print_expression(ast);

@@ -168,6 +168,10 @@ Node *factor()
 	out = var_node(tok->val.ident);
 	match(IDENT);
 	return out;
+    } else if (tok->type== OP && tok->val.op == MINUS) {
+        match(OP);
+        out = times_node(integer_node(-1), factor());
+        return out;
     } else {
 	/* IDK what we got */
 	printf("Syntax Error\n");
