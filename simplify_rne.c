@@ -140,7 +140,8 @@ Node * simplify_RNE_rec(Node * u)
 
     if (u->type == BIN_OP_POWER) {
         v = simplify_RNE_rec(u->args[0]);
-        return evaluate_power(v, u->args[1]->value);
+        w = simplify_RNE_rec(u->args[1]);
+        return evaluate_power(v, w->value);
     }
 
 }

@@ -152,6 +152,7 @@ Node *factor()
 {
     // printf("factor\n");
     Node *out = NULL;
+    Node *temp = NULL;
     /* Just a plain integer */
     if (tok->type == INTEGER) {
 	out = integer_node(tok->val.int_val);
@@ -170,7 +171,11 @@ Node *factor()
 	return out;
     } else if (tok->type== OP && tok->val.op == MINUS) {
         match(OP);
-        out = times_node(integer_node(-1), factor());
+        temp = factor();
+        if (temp->type == INT) {
+            return integer_node(-1*temp->value);
+        }
+        out = times_node(integer_node(-1), temp);
         return out;
     } else {
 	/* IDK what we got */

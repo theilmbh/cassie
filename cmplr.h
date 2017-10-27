@@ -59,6 +59,7 @@ Node *minus_node(Node * l, Node * r);
 Node *integer_node(int val);
 Node *divide_node();
 Node *frac_node();
+Node *pow_node();
 
 Node *factor();
 Node *expression();

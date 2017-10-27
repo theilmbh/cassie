@@ -23,6 +23,7 @@
 #include "symbol.h"
 #include "algebra.h"
 #include "simplify_rne.h"
+#include "simplify.h"   
 
 #define PRINT_AST
 
@@ -167,7 +168,7 @@ int main(int argc, char **argv)
         printf("In  [%d] :=> ", eval_num);
         ast = parse(stdin);
         print_ast(stdout, ast, 0, -1, 0);
-        ast = simplify_RNE(ast);
+        ast = automatic_simplify(ast);
         //ast1 = attach_variables(ast);
         //FILE *out = fopen("./ast.tree", "w");
 #ifdef PRINT_AST
