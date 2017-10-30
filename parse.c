@@ -28,6 +28,9 @@ void match(token_t type)
 
 void attach_argument(Node * N, Node * arg)
 {
+    if (arg == NULL) {
+        return;
+    }
     N->args[N->n_args] = arg;
     N->n_args++;
 }

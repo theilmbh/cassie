@@ -34,4 +34,13 @@ Node * base(Node * u);
 Node * exponent(Node * u);
 Node * simplify_integer_power(Node * v, Node * w);
 
+int ast_order(Node * u, Node * v);
+int constant_compare(Node * u, Node * v);
+int tree_equals(Node * u, Node * v);
+
+Node * first (Node * u);
+Node * rest(Node * u);
+Node * merge_products(Node * p, Node * q);
+Node * adjoin(Node * f, Node * u);
+
 #endif

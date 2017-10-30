@@ -48,11 +48,14 @@ void print_expression( Node * ast)
     /* If it's an operator, print the left side,
        then the operator, then the right side */
     if (ast->type != INT && ast->type != VAR) {
+        int n = ast->n_args;
+        int i;
 	switch (ast->type) {
 	case BIN_OP_TIMES:
-            print_expression(ast->args[0]);
-	    printf(" ");
-            print_expression(ast->args[1]);
+            for (i = 0; i < n; i++ ) {
+                print_expression(ast->args[i]);
+                printf(" ");
+            }
 	    break;
 	case BIN_OP_PLUS:
             print_expression(ast->args[0]);

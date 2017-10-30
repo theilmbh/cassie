@@ -15,11 +15,87 @@
  *
  * =====================================================================================
  */
-
+#include <string.h>
 #include "cmplr.h"
 #include "simplify_rne.h"
 #include "symbol.h"
 #include "simplify.h"
+
+int tree_equals(Node * ast1, Node * ast2)
+{
+    /* Determines if two asts are equivalent, recursively */
+
+    /* If the head is different type, then return false */
+    if (ast1->type != ast2->type) {
+        return 0;
+    }
+
+    if (ast1->n_args != ast2->n_args) {
+        return 0;
+    }
+
+    /* If integers, check that value is the same */
+    if (ast1->type == INT) {
+        return (ast1->value == ast2->value);
+    }
+
+    if (ast1->type == FRAC) {
+        return ((numerator_fun(ast1) == numerator_fun(ast2)) &&
+                (denominator_fun(ast1) == denominator_fun(ast2)));
+    }
+
+    if (ast1->type == VAR) {
+        if (!strncmp(ast1->name, ast2->name, MAXIDENT)) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    int i;
+    for (i = 0; i < ast1->n_args; i++) {
+        if (!tree_equals(ast1->args[i], ast2->args[i])) {
+            return 0;
+        }
+    }
+    return 1; 
+}
+
+Node * first(Node * u)
+{
+    /* Returns a node of the same type as u 
+     * containing just the first argument */
+
+    Node * out = u->args[0];
+    return out;
+}
+
+Node * rest(Node * u)
+{
+
+    /* Returns a node, same type as u, conatining all but first arg */
+    Node * out = times_node(NULL, NULL);
+    int i;
+    for (i=1; i < u->n_args; i++) {
+        attach_argument(out, u->args[i]);
+    }
+    out->type = u->type;
+    return out;
+}
+
+Node * adjoin(Node * f, Node * u)
+{
+    /* adds f as an argument to the front of u */
+    Node * out = times_node(NULL, NULL);
+    int i;
+    attach_argument(out, f);
+    for (i = 0; i < u->n_args; i++) {
+        attach_argument(out, u->args[i]);
+    }
+    out->type = u->type;
+    free(u);
+    return out;
+}
 
 int is_integer_val(Node * u, int val) 
 {
@@ -99,7 +175,9 @@ Node * simplify_product(Node * u)
 
 Node * simplify_product_rec(Node * u)
 {
-    if (u->n_args == 2) {
+    if (u->n_args == 2 &&
+        u->args[0]->type != BIN_OP_TIMES &&
+        u->args[1]->type != BIN_OP_TIMES) {
         if ((is_constant(u->args[0])) && (is_constant(u->args[1]))) {
             Node * P = simplify_RNE(u);
             if (P->value == 1) {
@@ -126,8 +204,91 @@ Node * simplify_product_rec(Node * u)
             u->args[1] = NULL;
             return u;
         }
+
+        if (tree_equals(base(u->args[0]), base(u->args[1]))) {
+            Node * S = simplify_sum(plus_node(exponent(u->args[0]), 
+                                              exponent(u->args[1])));
+            Node * P = simplify_power(pow_node(base(u->args[0]), S));
+
+            if (is_integer_val(P, 1)) {
+                u->n_args = 0;
+                u->args[0] = NULL;
+                u->args[1] = NULL;
+                return u;
+            } else {
+                u->n_args = 1;
+                u->args[0] = P;
+                u->args[1] = NULL;
+                return u;
+            }
+        }
+
+        /* SPRDREC 1-4 */
+        if (ast_order(u->args[1], u->args[0])) {
+            Node * temp = u->args[1];
+            u->args[1] = u->args[0];
+            u->args[0] = temp;
+            return u;
+        }
+        return u;
+    }
+
+    /* SPRDREC-2 */
+    if ((u->n_args == 2) && (u->args[0]->type == BIN_OP_TIMES || 
+                             u->args[1]->type == BIN_OP_TIMES   )) {
+        Node * temp;
+        if (u->args[1]->type != BIN_OP_TIMES ) {
+            temp = times_node(u->args[1], NULL);
+            return merge_products(u->args[0], temp);
+        }
+        if (u->args[0]->type != BIN_OP_TIMES) {
+            temp = times_node(u->args[0], NULL);
+            return merge_products(temp, u->args[1]);
+        }
+
+        return merge_products(u->args[0], u->args[1]);
+    }
+    
+    Node * w = simplify_product_rec(rest(u));
+    Node * u1 = first(u);
+    if (u1->type == BIN_OP_TIMES) {
+        return merge_products(u1, w);
+    } else {
+        return merge_products(times_node(u1, NULL), w);
     }
     return u;
+}
+
+Node * merge_products(Node * p, Node * q)
+{
+    if (q->n_args == 0) {
+        return p;
+    }
+
+    if (p->n_args == 0) {
+        return q;
+    }
+
+    Node *p1, *q1, *h, *temp;
+    p1 = first(p);
+    q1 = first(q);
+    h = simplify_product_rec(times_node(p1, q1));
+
+    if (h->n_args == 0) {
+        return merge_products(rest(p), rest(q));
+    }
+
+    if (h->n_args == 1) {
+        return adjoin(h->args[0], merge_products(rest(p), rest(q)));
+    }
+
+    if (tree_equals(h->args[0], p1)) {
+        temp = merge_products(rest(p), q);
+        return adjoin(p1, temp);
+    } else {
+        temp = merge_products(p, rest(q));
+        return adjoin(q1, temp);
+    }
 }
 
 Node * simplify_quotient(Node * u)
@@ -221,4 +382,93 @@ Node * simplify_integer_power(Node * v, Node * w)
     }
 
     return pow_node(v, w);
+}
+
+int constant_compare(Node * u, Node * v)
+{
+    /* computes u < v for u, v int or frac */
+
+    int out = (numerator_fun(u)*denominator_fun(v)) < 
+              (numerator_fun(v)*denominator_fun(u));
+    return out;
+}
+
+int ast_order(Node * u, Node * v)
+{
+    /* The ast order relation on terms */
+    int out; 
+    /* Rule 1 - constants are in numerical order */
+    if (is_constant(u) && is_constant(v)) {
+        return constant_compare(u, v);
+    }
+
+    /* Rule 2 - Lexicographic order for variables */
+    if (u->type == VAR && v->type == VAR) {
+        if (strncmp(u->name, v->name, MAXIDENT) < 0) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    /* Rule 3 - Products and sums */
+    if ((u->type == BIN_OP_TIMES && v->type == BIN_OP_TIMES) || 
+        (u->type == BIN_OP_PLUS  && v->type == BIN_OP_PLUS )  ) {
+        
+        int m = u->n_args - 1;
+        int n = v->n_args - 1; 
+        int min_arg = (m < n) ? m : n;
+        if (!tree_equals(u->args[m], v->args[n])) {
+            return ast_order(u->args[m], v->args[n]);
+        }
+
+        int i;
+        for (i = 0; i <= min_arg; i++) {
+            if(!tree_equals(u->args[m-i], v->args[n-i])) {
+                return ast_order(u->args[m-i], v->args[n-i]); 
+            }
+        }
+        return (m < n);
+    }
+
+    /* Rule 4 - Powers */
+    if (u->type == BIN_OP_POWER && v->type == BIN_OP_POWER) {
+        if (!tree_equals(base(u), base(v))) {
+            return ast_order(base(u), base(v));
+        } else {
+            return ast_order(exponent(u), exponent(v));
+        }
+    }
+
+   /* Rule 7 - Fractions and other */
+    if (is_constant(u) && !is_constant(v)) {
+        return 1;
+    }
+
+    /* Rule 8 */
+    if (u->type == BIN_OP_TIMES && v->type != BIN_OP_TIMES) {   
+        Node * temp = times_node(v, NULL);
+        out = ast_order(u, temp);
+        free(temp);
+        return out; 
+    }
+
+    /* Rule 9 */
+    if (u->type == BIN_OP_POWER && v->type != BIN_OP_POWER) {
+        Node * temp = pow_node(v, NULL);
+        out = ast_order(u, temp);
+        free(temp);
+        return out;
+    }
+
+    /* Rule 10 */
+    if (u->type == BIN_OP_PLUS && v->type != BIN_OP_PLUS) {
+        Node * temp = plus_node(v, NULL);
+        out = ast_order(u, temp);
+        free(temp);
+        return out;
+    }
+
+    /* Rule 13 */
+    return (!ast_order(v, u));
 }
