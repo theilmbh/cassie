@@ -52,15 +52,18 @@ void print_expression( Node * ast)
         int i;
 	switch (ast->type) {
 	case BIN_OP_TIMES:
-            for (i = 0; i < n; i++ ) {
+            for (i = 0; i < n-1; i++ ) {
                 print_expression(ast->args[i]);
                 printf(" ");
             }
+            print_expression(ast->args[n-1]);
 	    break;
 	case BIN_OP_PLUS:
-            print_expression(ast->args[0]);
-	    printf("  +  ");
-            print_expression(ast->args[1]);
+            for (i = 0; i < n-1; i++ ) {
+                print_expression(ast->args[i]);
+                printf(" + ");
+            }
+            print_expression(ast->args[n-1]);
 	    break;
 	case BIN_OP_MINUS:
             print_expression(ast->args[0]);

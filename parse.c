@@ -64,17 +64,19 @@ Node *plus_node(Node * l, Node * r)
     return out;
 }
 
-/* Node *minus_node(Node * l, Node * r)
+ Node *minus_node(Node * l, Node * r)
 {
     Node *out = malloc(sizeof(Node));
     out->type = BIN_OP_MINUS;
     out->value = 0;
     out->left = l;
     out->right = r;
+    attach_argument(out, l);
+    attach_argument(out, r);
     return out;
-}*/
+}
 
-Node *minus_node(Node * l, Node * r)
+/*  Node *minus_node(Node * l, Node * r)
 {
     return plus_node(l, times_node(integer_node(-1), r));
     if (r->type == BIN_OP_PLUS || r->type == BIN_OP_MINUS ) {
@@ -82,7 +84,7 @@ Node *minus_node(Node * l, Node * r)
     } else {
         return plus_node(l, negate(r));
     }
-}
+}*/
 
 Node *times_node(Node * l, Node * r)
 {
@@ -227,6 +229,29 @@ Node *term()
     return out;
 }
 
+Node * half_expression(Node * first)
+{
+    /* Parse an expression */
+    Node *out = NULL;
+
+    /* Plus operation */
+    if (tok->type == OP && tok->val.op == PLUS) {
+	match(OP);
+	out = plus_node(first, expression());
+	return out;
+    }
+
+    /* Minus Operation */
+    if (tok->type == OP && tok->val.op == MINUS) {
+	match(OP);
+	out = minus_node(first, term());
+        out = half_expression(out);
+	return out;
+    }
+    return first;
+
+}
+
 Node *expression()
 {
 
@@ -245,7 +270,8 @@ Node *expression()
     /* Minus Operation */
     if (tok->type == OP && tok->val.op == MINUS) {
 	match(OP);
-	out = minus_node(ph, expression());
+	out = minus_node(ph, term());
+        out = half_expression(out); 
 	return out;
     }
     return ph;

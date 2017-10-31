@@ -30,6 +30,7 @@ Node * simplify_product(Node * u);
 Node * simplify_product_rec(Node * u);  
 Node * simplify_quotient(Node * u);
 Node * simplify_power(Node * u);
+Node * simplify_minus(Node * u);
 Node * base(Node * u);
 Node * exponent(Node * u);
 Node * simplify_integer_power(Node * v, Node * w);
@@ -42,5 +43,10 @@ Node * first (Node * u);
 Node * rest(Node * u);
 Node * merge_products(Node * p, Node * q);
 Node * adjoin(Node * f, Node * u);
+
+Node * simplify_sum_rec(Node * u);
+Node * coefficient(Node * u);
+Node * termlike(Node * u);
+Node * merge_sums(Node * p, Node * q);
 
 #endif

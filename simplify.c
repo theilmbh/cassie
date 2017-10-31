@@ -136,12 +136,177 @@ Node * automatic_simplify(Node * u)
         case BIN_OP_DIVIDE:
             return simplify_quotient(u);
             break;
+        case BIN_OP_MINUS:
+            return simplify_minus(u);
+            break;
     }
 }
 
 Node * simplify_sum(Node * u)
 {
+    int i;
+    for (i = 0; i < u->n_args; i++) {
+        if (u->args[i]->type == UNDEFINED) {
+            return &UNDEFINED_NODE;
+        }
+    }
+
+    if (u->n_args == 1) {
+        return u->args[0];
+    }
+
+    Node * v = simplify_sum_rec(u);
+    if (v->n_args == 0) {
+        return integer_node(0);
+    }
+    if (v->n_args == 1) {
+        return v->args[0];
+    }
+    return v;
+}
+
+Node * coefficient(Node * u)
+{
+    if (u->type == BIN_OP_TIMES) {
+        if (is_constant(u->args[0])) {
+            return u->args[0];
+        } else {
+            return integer_node(1);
+        }
+    }
+
+    if (is_constant(u)) {
+        return &UNDEFINED_NODE;
+    }
+
+    return integer_node(1);
+}
+
+Node * termlike(Node * u)
+{
+    if (u->type == BIN_OP_TIMES) {
+        if (is_constant(u->args[0])) {
+            return rest(u);
+        } else {
+            return u;
+        }
+    }
+
+    if (is_constant(u)) {
+        return &UNDEFINED_NODE;
+    }
+
+    return times_node(u, NULL);
+
+}
+
+Node * simplify_sum_rec(Node * u)
+{
+    /* 2 args, no sum */
+    Node ** args = u->args;
+    if ((u->n_args == 2) && (args[0]->type != BIN_OP_PLUS) &&
+            (args[1]->type != BIN_OP_PLUS))
+    {
+        if (is_constant(args[0]) && is_constant(args[1])) {
+            Node * P = simplify_RNE(u);
+            if (is_integer_val(P, 0)) {
+                return plus_node(NULL, NULL);
+            } else {
+                return plus_node(P, NULL);
+            }
+        }
+
+        if (is_integer_val(args[0], 0)) {
+            return plus_node(args[1], NULL);
+        }
+
+        if (is_integer_val(args[1], 0)) {
+            return plus_node(args[0], NULL);
+        }
+        
+       if (tree_equals(termlike(args[0]), termlike(args[1]))) {
+           /* Like terms, collect coefficients */
+           Node * a = coefficient(args[0]);
+           Node * b = coefficient(args[1]);
+           Node * S = simplify_sum(plus_node(a, b));
+           Node * P = simplify_product(times_node(S, termlike(args[0])));
+           if (is_integer_val(P, 0)) {
+               return plus_node(NULL, NULL);
+           } else {
+               return plus_node(P, NULL);
+           }
+       } 
+
+       if (ast_order(args[1], args[0])) {
+           return plus_node(args[1], args[0]);
+       } else {
+           return u;
+       }
+    }
+
+    if ((u->n_args == 2) && (args[0]->type == BIN_OP_PLUS || 
+                args[1]->type == BIN_OP_PLUS)) 
+    {
+        Node * temp;
+        if (args[1]->type != BIN_OP_PLUS) {
+            temp = plus_node(args[1], NULL);
+            return merge_sums(args[0], temp);
+        }
+        if (args[0]->type != BIN_OP_PLUS) {
+            temp = plus_node(args[0], NULL);
+            return merge_sums(temp, args[1]);
+        }
+        return merge_sums(args[0], args[1]);
+    }
+
+    Node * w = simplify_sum_rec(rest(u));
+    Node * u1 = first(u);
+    if (u1->type == BIN_OP_PLUS) {
+        return merge_sums(u1, w);
+    } else {
+        return merge_sums(plus_node(u1, NULL), w);
+    }
+
     return u;
+}
+
+Node * merge_sums(Node * p, Node * q)
+{
+    if (q->n_args == 0) {
+        return p;
+    }
+
+    if (p->n_args == 0) {
+        return q;
+    }
+
+    Node *p1, *q1, *h, *temp;
+    p1 = first(p);
+    q1 = first(q);
+    h = simplify_sum_rec(plus_node(p1, q1));
+
+    if (h->n_args == 0) {
+        return merge_sums(rest(p), rest(q));
+    }
+
+    if (h->n_args == 1) {
+        return adjoin(h->args[0], merge_sums(rest(p), rest(q)));
+    }
+
+    if (tree_equals(h->args[0], p1)) {
+        temp = merge_sums(rest(p), q);
+        return adjoin(p1, temp);
+    } else {
+        temp = merge_sums(p, rest(q));
+        return adjoin(q1, temp);
+    }
+    
+}
+
+Node * simplify_minus(Node * u)
+{
+    Node * r = simplify_product(times_node(integer_node(-1), u->args[1]));
+    return simplify_sum(plus_node(u->args[0], r));
 }
 
 Node * simplify_product(Node * u)
@@ -204,6 +369,10 @@ Node * simplify_product_rec(Node * u)
             u->args[1] = NULL;
             return u;
         }
+        /*  print_expression(base(u->args[0]));
+        printf("\n");   
+        print_expression(base(u->args[1]));
+        printf("\n\n");*/
 
         if (tree_equals(base(u->args[0]), base(u->args[1]))) {
             Node * S = simplify_sum(plus_node(exponent(u->args[0]), 
@@ -457,7 +626,7 @@ int ast_order(Node * u, Node * v)
 
     /* Rule 9 */
     if (u->type == BIN_OP_POWER && v->type != BIN_OP_POWER) {
-        Node * temp = pow_node(v, NULL);
+        Node * temp = pow_node(v, integer_node(1));
         out = ast_order(u, temp);
         free(temp);
         return out;
