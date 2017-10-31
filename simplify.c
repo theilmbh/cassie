@@ -293,7 +293,9 @@ Node * merge_products(Node * p, Node * q)
 
 Node * simplify_quotient(Node * u)
 {
-    return u;
+    /* rewrite a/b as a*b^-1 and simplify */
+    Node * q = simplify_power(pow_node(u->args[1], integer_node(-1)));
+    return simplify_product(times_node(u->args[0], q));
 }
 
 Node * simplify_power(Node * u)
