@@ -174,14 +174,6 @@ Node *factor()
 	out = var_node(tok->val.ident);
 	match(IDENT);
 	return out;
-    } else if (tok->type== OP && tok->val.op == MINUS) {
-        match(OP);
-        temp = factor();
-        if (temp->type == INT) {
-            return integer_node(-1*temp->value);
-        }
-        out = times_node(integer_node(-1), temp);
-        return out;
     } else {
 	/* IDK what we got */
 	printf("Syntax Error\n");
@@ -204,9 +196,17 @@ Node *term()
 {
     /* parse a term */
     Node *out = NULL;
-
+    if (tok->type== OP && tok->val.op == MINUS) {
+        match(OP);
+        Node * temp = power();
+        if (temp->type == INT) {
+            return integer_node(-1*temp->value);
+        }
+        out = times_node(integer_node(-1), temp);
+    } else {
     /* First, parse any factors */
-    out = power();
+        out = power();
+    }
 
     /* Times operation */
     if (tok->type == OP && tok->val.op == MULTIPLY) {

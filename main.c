@@ -52,11 +52,18 @@ void print_expression( Node * ast)
         int i;
 	switch (ast->type) {
 	case BIN_OP_TIMES:
-            for (i = 0; i < n-1; i++ ) {
-                print_expression(ast->args[i]);
-                printf(" ");
+            for (i = 0; i < n; i++ ) {
+                if (ast->args[i]->type == BIN_OP_PLUS) {
+                    printf("(");
+                    print_expression(ast->args[i]);
+                    printf(")");
+                }else {
+                    print_expression(ast->args[i]);
+                }
+                if (i != n-1) {
+                    printf(" ");
+                }
             }
-            print_expression(ast->args[n-1]);
 	    break;
 	case BIN_OP_PLUS:
             for (i = 0; i < n-1; i++ ) {
@@ -71,7 +78,13 @@ void print_expression( Node * ast)
             print_expression(ast->args[1]);
 	    break;
         case BIN_OP_POWER:
-            print_expression(ast->args[0]);
+            if (ast->args[0]->type == BIN_OP_PLUS) {
+                printf("(");
+                print_expression(ast->args[0]);
+                printf(")");
+            }else {
+                print_expression(ast->args[0]);
+            }
             printf("^");
             print_expression(ast->args[1]);
             break;
@@ -178,7 +191,7 @@ int main(int argc, char **argv)
         //ast1 = attach_variables(ast);
         //FILE *out = fopen("./ast.tree", "w");
 #ifdef PRINT_AST
-        print_ast(stdout, ast, 0, -1, 0);
+       print_ast(stdout, ast, 0, -1, 0);
 #endif
         printf("\n");
         print_expression(ast);
