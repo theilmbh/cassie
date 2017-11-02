@@ -68,5 +68,6 @@ Node *expression();
 Node *term();
 Node *parse(FILE * src);
 Node *statement();
+void attach_argument(Node * out, Node * arg);
 
 #endif

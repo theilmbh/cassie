@@ -22,8 +22,9 @@
 #include "cmplr.h"
 #include "simplify_rne.h"
 
-Node UNDEFINED_NODE = {UNDEFINED, 0, NULL, NULL, 0, NULL, NULL};
-
+Node UNDEFINED_NODE = {UNDEFINED, 
+                       0,
+                       "UNDEFINED"};
 int absval(int a) 
 {
     if (a < 0) {

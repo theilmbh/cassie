@@ -8,6 +8,9 @@ Node * evaluate_sum(Node * v, Node * w);
 Node * evaluate_product(Node * v, Node * w);
 Node * evaluate_power(Node *v, int n);
 
+int numerator_fun(Node * u);
+int denominator_fun(Node * u);
+
 Node * simplify_RNE_rec(Node * u);
 Node * simplify_RNE(Node *u);
 
