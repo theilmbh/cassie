@@ -24,10 +24,11 @@
 #include "algebra.h"
 #include "simplify_rne.h"
 #include "simplify.h"   
+#include "pretty_print.h"
 
 #define PRINT_AST
 
-void print_fraction( Node * frac)
+void pretty_print_fraction( Node * frac)
 {
     int ntop = num_digits(numerator_fun(frac));
     int nbot = num_digits(denominator_fun(frac));
@@ -40,6 +41,15 @@ void print_fraction( Node * frac)
     }
     printf("\n");
     printf("%d", denominator_fun(frac));
+}
+
+void print_fraction(Node * frac)
+{
+    printf("(");
+    printf("%d", numerator_fun(frac));
+    printf("/");
+    printf("%d", denominator_fun(frac));
+    printf(")");
 }
     
 void print_expression( Node * ast)
@@ -91,6 +101,15 @@ void print_expression( Node * ast)
         case FRAC:
             print_fraction(ast);
             break; 
+        case FUNC:
+            printf("%s", ast->name);
+            printf("[");
+            for (i = 0; i < ast->n_args-1; i++) {
+                print_expression(ast->args[i]);
+                printf(",");
+            }
+            print_expression(ast->args[ast->n_args-1]);
+            printf("]");
 	}
     }
 
@@ -179,45 +198,29 @@ int main(int argc, char **argv)
 {
     //source = fopen(argv[1], "r");
     Node *ast, *ast1;
+    struct pp_buf * buf; 
     int eval_num = 1;
+
+
+    int x, y, ULim, LLim;
+    x = 0;
+    y = 0;
+    ULim = -2;
+    LLim = 2;
     printf("Welcome to CASSIE \n");
     printf("Computer Algebra System v0.01\n");
     printf("Copyright (c) 2017 Brad Theilman\n\n");
     while (1) {
         printf("In  [%d] :=> ", eval_num);
         ast = parse(stdin);
-        print_ast(stdout, ast, 0, -1, 0);
         ast = automatic_simplify(ast);
-        //ast1 = attach_variables(ast);
-        //FILE *out = fopen("./ast.tree", "w");
 #ifdef PRINT_AST
-       print_ast(stdout, ast, 0, -1, 0);
+       //print_ast(stdout, ast, 0, -1, 0);
 #endif
         printf("\n");
         print_expression(ast);
         printf("\n\n");
-        //int v = evaluate(rewrite_minus(ast));
-        //printf("\nOut [%d] :=> %d\n\n", eval_num, v);
         eval_num++;
     }
-
-
-    //
-    // printf("Rewrite Minus: \n");
-    // ast = rewrite_minus(ast);
-    // print_ast(ast, 0);
-    //
-    // printf("Expanded: \n");
-    // ast = expand(ast);
-    // print_ast(ast, 0);
-    //
-    // printf("Reorder coeff: \n");
-    // ast = reorder_coeff(ast);
-    // print_ast(ast, 0);
-    //
-    // print_expression(ast);
-    // printf("\n");
-    //fclose(out);
-    //fclose(source);
     return 0;
 }

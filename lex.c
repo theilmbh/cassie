@@ -91,6 +91,18 @@ void read_one_token(Token * tok, FILE * f)
 	tok->type = SEMICOLON;
 	return;
     }
+    if (ch == '[') {
+	tok->type = L_SQUARE_BRACKET;
+	return;
+    }
+    if (ch == ']') {
+	tok->type = R_SQUARE_BRACKET;
+	return;
+    }
+    if (ch == ',') {
+	tok->type = COMMA;
+	return;
+    }
 
     if (ch == '^') {
 	tok->type = OP;

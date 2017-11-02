@@ -152,6 +152,38 @@ Node *var_node(char *var_name)
     return out;
 }
 
+Node * func_call_node(char *func_name) {
+    Node * out = calloc(1, sizeof(Node));
+    out->type = FUNC;
+    strcpy(out->name, func_name);
+    return out;
+}
+
+Node *func() {
+    Node * out; 
+    char name[MAXIDENT];
+    strcpy(name, tok->val.ident);
+    match(IDENT);
+    if (tok->type == L_SQUARE_BRACKET) {
+        out = func_call_node(name);
+        match(L_SQUARE_BRACKET);
+        while (tok->type != R_SQUARE_BRACKET) {
+            Node * arg = expression();
+            attach_argument(out, arg);
+            if (tok->type == R_SQUARE_BRACKET) {
+                break;
+            }
+            match(COMMA);
+        }
+        match(R_SQUARE_BRACKET);
+    } else {
+        out = var_node(name);
+    }
+
+    return out;
+
+}
+
 /* Grammar functions corresponding to Nonterminals */
 Node *factor()
 {
@@ -170,10 +202,9 @@ Node *factor()
 	match(R_PAREN);
 	return out;
     } else if (tok->type == IDENT) {
-	/* Variable */
-	out = var_node(tok->val.ident);
-	match(IDENT);
-	return out;
+	/* Variable or function*/
+        out = func();
+        return out;
     } else {
 	/* IDK what we got */
 	printf("Syntax Error\n");

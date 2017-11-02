@@ -31,6 +31,7 @@ Node * simplify_product_rec(Node * u);
 Node * simplify_quotient(Node * u);
 Node * simplify_power(Node * u);
 Node * simplify_minus(Node * u);
+Node * simplify_func(Node * u);
 Node * base(Node * u);
 Node * exponent(Node * u);
 Node * simplify_integer_power(Node * v, Node * w);

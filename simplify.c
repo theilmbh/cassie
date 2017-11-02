@@ -16,6 +16,7 @@
  * =====================================================================================
  */
 #include <string.h>
+#include <stdlib.h>
 #include "cmplr.h"
 #include "simplify_rne.h"
 #include "symbol.h"
@@ -139,7 +140,23 @@ Node * automatic_simplify(Node * u)
         case BIN_OP_MINUS:
             return simplify_minus(u);
             break;
+        case FUNC:
+            return simplify_func(u);
+            break;
     }
+}
+
+Node * simplify_func(Node * u)
+{
+    if (!strncmp(u->name, "Plus", MAXIDENT) ) {
+        Node * out = plus_node(NULL, NULL);
+        for (int i = 0; i < u->n_args; i++) {
+            attach_argument(out, u->args[i]);
+        }
+        free(u);
+        return simplify_sum(out);
+    }
+    return u;
 }
 
 Node * simplify_sum(Node * u)

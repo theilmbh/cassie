@@ -9,7 +9,8 @@
 typedef enum token_t {
     INTEGER, OP, ENDA,
     L_PAREN, R_PAREN, IDENT,
-    KW_INT, SEMICOLON, ASSIGN_OP
+    KW_INT, SEMICOLON, ASSIGN_OP,
+    R_SQUARE_BRACKET, L_SQUARE_BRACKET, COMMA
 } token_t;
 
 typedef enum op_t { PLUS, MULTIPLY, MINUS, DIVIDE, POWER } op_t;
@@ -35,7 +36,8 @@ typedef enum ast_node_t {
     VAR,
     PAREN,
     UNDEFINED,
-    FRAC
+    FRAC,
+    FUNC
 } ast_node_t;
 
 typedef struct Node {
