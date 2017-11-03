@@ -21,6 +21,7 @@
 #include "simplify_rne.h"
 #include "symbol.h"
 #include "simplify.h"
+#include "derivative.h"
 
 int tree_equals(Node * ast1, Node * ast2)
 {
@@ -155,6 +156,10 @@ Node * simplify_func(Node * u)
         }
         free(u);
         return simplify_sum(out);
+    }
+
+    if (!strcmp(u->name, "D")) {
+        return derivative_evaluate(u);
     }
     return u;
 }
