@@ -167,6 +167,7 @@ Node * simplify_func(Node * u)
 Node * simplify_sum(Node * u)
 {
     int i;
+    Node * out;
     for (i = 0; i < u->n_args; i++) {
         if (u->args[i]->type == UNDEFINED) {
             return &UNDEFINED_NODE;
@@ -174,7 +175,8 @@ Node * simplify_sum(Node * u)
     }
 
     if (u->n_args == 1) {
-        return u->args[0];
+        out = u->args[0];
+        return out;
     }
 
     Node * v = simplify_sum_rec(u);
@@ -219,22 +221,24 @@ Node * termlike(Node * u)
     }
 
     return times_node(u, NULL);
-
 }
 
 Node * simplify_sum_rec(Node * u)
 {
     /* 2 args, no sum */
     Node ** args = u->args;
+    Node * out;
     if ((u->n_args == 2) && (args[0]->type != BIN_OP_PLUS) &&
             (args[1]->type != BIN_OP_PLUS))
     {
         if (is_constant(args[0]) && is_constant(args[1])) {
             Node * P = simplify_RNE(u);
             if (is_integer_val(P, 0)) {
-                return plus_node(NULL, NULL);
+                out = plus_node(NULL, NULL);
+                return out; 
             } else {
-                return plus_node(P, NULL);
+                out = plus_node(P, NULL);
+                return out;
             }
         }
 
@@ -604,6 +608,15 @@ int ast_order(Node * u, Node * v)
         }
     }
 
+    /* Rule 2.5 - Lexicographic order for functions */
+    if (u->type == FUNC && v->type == FUNC) {
+        if (strncmp(u->name, v->name, MAXIDENT) < 0) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
     /* Rule 3 - Products and sums */
     if ((u->type == BIN_OP_TIMES && v->type == BIN_OP_TIMES) || 
         (u->type == BIN_OP_PLUS  && v->type == BIN_OP_PLUS )  ) {
@@ -633,6 +646,28 @@ int ast_order(Node * u, Node * v)
         }
     }
 
+    /* Rule 5 - Functions */
+    if (u->type == FUNC && v->type == FUNC) {
+        if (strcmp(u->name, v->name)) {
+            return strcmp(u->name, v->name) < 0;
+        } 
+
+        int m = u->n_args - 1;
+        int n = v->n_args - 1; 
+        int min_arg = (m < n) ? m : n;
+        if (!tree_equals(u->args[m], v->args[n])) {
+            return ast_order(u->args[m], v->args[n]);
+        }
+
+        int i;
+        for (i = 0; i <= min_arg; i++) {
+            if(!tree_equals(u->args[m-i], v->args[n-i])) {
+                return ast_order(u->args[m-i], v->args[n-i]); 
+            }
+        }
+        return (m < n);
+    }
+
    /* Rule 7 - Fractions and other */
     if (is_constant(u) && !is_constant(v)) {
         return 1;
@@ -660,6 +695,15 @@ int ast_order(Node * u, Node * v)
         out = ast_order(u, temp);
         free(temp);
         return out;
+    }
+
+    /* Rule 12 */
+    if (u->type == FUNC && v->type == VAR) {
+        if (!strcmp(u->name, v->name)) {
+            return 0;
+        } else {
+            return (strcmp(u->name, v->name) < 0);
+        }
     }
 
     /* Rule 13 */

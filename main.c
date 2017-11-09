@@ -207,15 +207,17 @@ int main(int argc, char **argv)
     y = 0;
     ULim = -2;
     LLim = 2;
+    printf("\n\n");
     printf("Welcome to CASSIE \n");
     printf("Computer Algebra System v0.01\n");
     printf("Copyright (c) 2017 Brad Theilman\n\n");
     while (1) {
         printf("In  [%d] :=> ", eval_num);
         ast = parse(stdin);
+ //       print_ast(stdout, ast, 0, -1, 0);
         ast = automatic_simplify(ast);
 #ifdef PRINT_AST
-       //print_ast(stdout, ast, 0, -1, 0);
+//       print_ast(stdout, ast, 0, -1, 0);
 #endif
         printf("\n");
         print_expression(ast);
